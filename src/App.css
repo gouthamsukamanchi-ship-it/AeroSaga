@@ -75,6 +75,29 @@ h2, h3 { margin: 0; font-weight: 500; }
 .teal { color: var(--teal); }
 .amber { color: var(--amber); }
 
+.api-form { display: grid; gap: 8px; margin-top: 12px; }
+.api-form input, .api-form select {
+  width: 100%; padding: 9px 10px; border: 1px solid #1b3a4c;
+  border-radius: 7px; color: var(--text); background: #0a1827;
+}
+.api-form input:focus, .api-form select:focus { outline: 1px solid var(--teal); }
+.api-form select option { color: var(--text); background: var(--panel); }
+.api-error { color: #ffaaaa; overflow-wrap: anywhere; }
+.api-error p { margin: 8px 0; }
+.mission-list, .signal-list {
+  display: grid; gap: 9px; list-style: none; margin: 12px 0 0; padding: 0;
+}
+.mission-list li, .signal-list li {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: #0a1827;
+}
+.mission-list li > div:first-child, .signal-list li { min-width: 0; }
+.mission-list li > div:first-child { display: grid; gap: 4px; }
+.mission-list strong, .signal-list span { overflow-wrap: anywhere; }
+.mission-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.tiny-button { padding: 4px 7px; border: 1px solid #1b3a4c; border-radius: 5px; color: var(--teal); }
+.tiny-button:disabled, .inject:disabled { opacity: 0.45; cursor: not-allowed; }
+
 .badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; }
 .badge.active { background: #0d3a3a; color: var(--live); }
 .badge.idle { background: #3a2a0d; color: var(--amber); }
@@ -117,9 +140,9 @@ h2, h3 { margin: 0; font-weight: 500; }
 /* ---------- Mission workflow DAG ---------- */
 .wf-sub { margin-top: 4px; }
 .wf-badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; background: #13263a; color: #c5d4e0; }
-.wf-badge.RUNNING, .wf-badge.COMPLETED { background: #0d3a3a; color: var(--live); }
-.wf-badge.COMPENSATING, .wf-badge.COMPENSATED { background: #3a2a0d; color: var(--amber); }
-.wf-badge.QUEUED, .wf-badge.OFFLINE { background: #222b33; color: #8d98a3; }
+.wf-badge.RUNNING, .wf-badge.IN_PROGRESS, .wf-badge.COMPLETED { background: #0d3a3a; color: var(--live); }
+.wf-badge.FAILED { background: #3a1515; color: #ff8a8a; }
+.wf-badge.PENDING, .wf-badge.QUEUED, .wf-badge.OFFLINE { background: #222b33; color: #8d98a3; }
 
 .dag { margin-top: 14px; }
 .dag-node {

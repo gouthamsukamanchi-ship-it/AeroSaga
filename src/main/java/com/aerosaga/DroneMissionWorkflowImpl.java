@@ -29,12 +29,14 @@ public class DroneMissionWorkflowImpl implements DroneMissionWorkflow {
         Workflow.getLogger(DroneMissionWorkflowImpl.class)
                 .info("Starting drone mission: " + missionId);
 
-        activities.takeOff(missionId);
-
-        activities.travel(missionId);
-
-        activities.returnHome(missionId);
-
-        return "Mission completed: " + missionId;
+        try {
+            activities.takeOff(missionId);
+            activities.travel(missionId);
+            activities.returnHome(missionId);
+            return "Mission completed: " + missionId;
+        } catch (RuntimeException exception) {
+            activities.failMission(missionId);
+            throw exception;
+        }
     }
 }

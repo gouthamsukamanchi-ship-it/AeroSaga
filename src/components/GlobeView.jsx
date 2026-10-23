@@ -4,7 +4,7 @@ import * as Cesium from 'cesium'
 import { Plus, Minus, LocateFixed } from 'lucide-react'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 import { CITIES, STATUS_COLORS } from '../data/drones'
-import { TICK_MS, ORBITS } from '../services/telemetryClient'
+import { TICK_MS } from '../services/telemetryClient'
 
 const token = import.meta.env.VITE_CESIUM_ION_TOKEN
 
@@ -18,19 +18,21 @@ const scratch = new Cesium.Cartesian3()
 export default function GlobeView({ drones, selectedId, onSelect }) {
   const containerRef = useRef(null)
   const viewerRef = useRef(null)
+  const pointsCollectionRef = useRef(null)
   const pointsRef = useRef(new Map())
   const lastTickRef = useRef(0)
-  const dronesRef = useRef(drones)
   const selectedRef = useRef(selectedId)
   const onSelectRef = useRef(onSelect)
 
-  dronesRef.current = drones
-  selectedRef.current = selectedId
-  onSelectRef.current = onSelect
+  useEffect(() => {
+    selectedRef.current = selectedId
+    onSelectRef.current = onSelect
+  }, [selectedId, onSelect])
 
-  // 1. Initialize the globe, markers, labels and orbit rings
+  // 1. Initialize the globe, markers, and labels.
   useEffect(() => {
     if (!containerRef.current) return
+    const pointEntries = pointsRef.current
 
     const baseLayer = token
       ? Cesium.ImageryLayer.fromWorldImagery()
@@ -60,33 +62,7 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
     const points = viewer.scene.primitives.add(
       new Cesium.PointPrimitiveCollection(),
     )
-
-    // Drone markers
-    dronesRef.current.forEach((drone) => {
-      const pos = Cesium.Cartesian3.fromDegrees(
-        drone.lon,
-        drone.lat,
-        drone.alt,
-      )
-
-      const point = points.add({
-        id: drone.id,
-        position: pos,
-        color: Cesium.Color.fromCssColorString(
-          STATUS_COLORS[drone.status] ?? '#19d3c5',
-        ),
-        pixelSize: 11,
-        outlineColor: Cesium.Color.fromCssColorString('#040c16'),
-        outlineWidth: 1.5,
-      })
-
-      pointsRef.current.set(drone.id, {
-        point,
-        from: Cesium.Cartesian3.clone(pos),
-        to: Cesium.Cartesian3.clone(pos),
-      })
-    })
-
+    pointsCollectionRef.current = points
     lastTickRef.current = performance.now()
 
     // Selected drone ring
@@ -121,34 +97,6 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
       })
     })
 
-    // Orbit rings around cities
-    ORBITS.forEach((orbit) => {
-      const coords = []
-
-      for (let i = 0; i <= 90; i++) {
-        const angle = (i / 90) * 2 * Math.PI
-        const latitudeRadians =
-          (orbit.city.lat * Math.PI) / 180
-
-        coords.push(
-          orbit.city.lon +
-            (orbit.r * Math.cos(angle)) /
-              Math.cos(latitudeRadians),
-          orbit.city.lat + orbit.r * Math.sin(angle),
-        )
-      }
-
-      viewer.entities.add({
-        polyline: {
-          positions: Cesium.Cartesian3.fromDegreesArray(coords),
-          width: 2,
-          material: Cesium.Color.fromCssColorString(
-            '#7df9ff',
-          ).withAlpha(0.75),
-        },
-      })
-    })
-
     // City center markers
     CITIES.forEach((city) => {
       points.add({
@@ -170,7 +118,7 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
           (performance.now() - lastTickRef.current) / TICK_MS,
         )
 
-        pointsRef.current.forEach((entry) => {
+        pointEntries.forEach((entry) => {
           Cesium.Cartesian3.lerp(
             entry.from,
             entry.to,
@@ -222,27 +170,57 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
       removePreRender()
       handler.destroy()
       viewer.destroy()
-      pointsRef.current.clear()
+      pointEntries.clear()
+      pointsCollectionRef.current = null
       viewerRef.current = null
     }
   }, [])
 
-  // 2. Update drone targets when fresh telemetry arrives
+  // 2. Keep markers synchronized with the backend fleet roster and telemetry.
   useEffect(() => {
+    const points = pointsCollectionRef.current
+    if (!points) return
+
+    const droneIds = new Set(drones.map((drone) => drone.id))
     drones.forEach((drone) => {
       const entry = pointsRef.current.get(drone.id)
-
-      if (!entry) return
-
-      entry.from = Cesium.Cartesian3.clone(
-        entry.point.position,
-      )
-
-      entry.to = Cesium.Cartesian3.fromDegrees(
+      const target = Cesium.Cartesian3.fromDegrees(
         drone.lon,
         drone.lat,
         drone.alt,
       )
+
+      if (entry) {
+        entry.from = Cesium.Cartesian3.clone(entry.point.position)
+        entry.to = target
+        entry.point.color = Cesium.Color.fromCssColorString(
+          STATUS_COLORS[drone.status] ?? '#19d3c5',
+        )
+        return
+      }
+
+      const point = points.add({
+        id: drone.id,
+        position: target,
+        color: Cesium.Color.fromCssColorString(
+          STATUS_COLORS[drone.status] ?? '#19d3c5',
+        ),
+        pixelSize: 11,
+        outlineColor: Cesium.Color.fromCssColorString('#040c16'),
+        outlineWidth: 1.5,
+      })
+      pointsRef.current.set(drone.id, {
+        point,
+        from: Cesium.Cartesian3.clone(target),
+        to: Cesium.Cartesian3.clone(target),
+      })
+    })
+
+    pointsRef.current.forEach((entry, id) => {
+      if (!droneIds.has(id)) {
+        points.remove(entry.point)
+        pointsRef.current.delete(id)
+      }
     })
 
     lastTickRef.current = performance.now()

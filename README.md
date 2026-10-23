@@ -66,7 +66,7 @@ npm run lint
 
 ## Backend
 
-The Spring Boot API runs on port `8080` and uses PostgreSQL. Create the `aerosaga_db` database, then provide database credentials through `DB_USERNAME` and `DB_PASSWORD`. `DATABASE_URL` can override the default JDBC URL.
+The Spring Boot API runs on port `8080` and uses PostgreSQL. Create the `aerosaga_db` database, then provide database credentials through `DB_USERNAME` and `DB_PASSWORD`. `DATABASE_URL` can override the default JDBC URL. The password must be set: PostgreSQL SCRAM authentication fails when `DB_PASSWORD` is empty.
 
 From the repository root, run the API with:
 
@@ -76,11 +76,21 @@ From the repository root, run the API with:
 
 On Windows, use `mvnw.cmd spring-boot:run`.
 
-The backend exposes `/api/drones` and `/api/missions` for drone and mission management. The dashboard's telemetry and mission-flow visualization currently use local simulation data.
+In PowerShell, set the credentials in the same terminal before starting the API:
+
+```powershell
+$env:DB_USERNAME = "postgres"
+$env:DB_PASSWORD = "<your PostgreSQL password>"
+mvnw.cmd spring-boot:run
+```
+
+The dashboard reads drone, mission, telemetry, and workflow-signal records from the backend. It can register drones, create and start missions, and show persisted workflow progress. By default, Temporal runs in a local in-memory development environment; its execution history is not durable across backend restarts. For durable workflows, run a Temporal server and set `SPRING_PROFILES_ACTIVE=external-temporal` and `TEMPORAL_TARGET=localhost:7233`. Map positions, speed, and heading use simulated values until a telemetry producer posts real readings.
+
+Telemetry producers can submit readings with `POST /api/telemetry/drone/{droneId}` using `batteryLevel`, `latitude`, `longitude`, and `altitude`. Mission workflows are started with `POST /api/missions/{id}/execute`; workflow activity records are available from `/api/workflow-signals`.
 
 ## Project Status
 
-The integration branch combines the dashboard and Temporal workflow code with the PostgreSQL drone and mission API. Frontend telemetry remains simulated.
+The integration branch combines the dashboard, Temporal workflow, telemetry, workflow-signal, and PostgreSQL drone and mission APIs. Map positions use stored telemetry when available and simulation placeholders otherwise.
 
 
 

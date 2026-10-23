@@ -14,4 +14,7 @@ public interface DroneMissionActivities {
 
     @ActivityMethod
     String returnHome(String missionId);
+
+    @ActivityMethod
+    void failMission(String missionId);
 }
