@@ -20,7 +20,7 @@ Arrow Saga is a drone fleet simulation project focused on visualizing drone posi
 ### 1. Clone the repository
 
 ```bash
-git clone --branch dashboards https://github.com/lokeshsenthilkumarl2008-cmyk/AeroSaga.git
+git clone --branch integerate https://github.com/lokeshsenthilkumarl2008-cmyk/AeroSaga.git
 cd AeroSaga
 ```
 
@@ -64,9 +64,23 @@ npm run lint
 - Keep simulation data and telemetry clearly separated from future live-drone integrations.
 - Coordinate changes to shared files with the team to reduce merge conflicts.
 
+## Backend
+
+The Spring Boot API runs on port `8080` and uses PostgreSQL. Create the `aerosaga_db` database, then provide database credentials through `DB_USERNAME` and `DB_PASSWORD`. `DATABASE_URL` can override the default JDBC URL.
+
+From the repository root, run the API with:
+
+```bash
+./mvnw spring-boot:run
+```
+
+On Windows, use `mvnw.cmd spring-boot:run`.
+
+The backend exposes `/api/drones` and `/api/missions` for drone and mission management. The dashboard's telemetry and mission-flow visualization currently use local simulation data.
+
 ## Project Status
 
-Drone simulation frontend development is in progress. Features and setup instructions may evolve as the project develops.
+The integration branch combines the dashboard and Temporal workflow code with the PostgreSQL drone and mission API. Frontend telemetry remains simulated.
 
 
 

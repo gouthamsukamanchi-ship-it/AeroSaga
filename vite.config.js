@@ -11,4 +11,9 @@ import cesium from 'vite-plugin-cesium'
 
 export default defineConfig({
   plugins: [react(), cesium()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:8080',
+    },
+  },
 })

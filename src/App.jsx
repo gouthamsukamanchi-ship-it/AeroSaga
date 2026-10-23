@@ -6,6 +6,7 @@ import { House, Target, Plane, Globe, ChartColumn, Settings } from 'lucide-react
 import GlobeView from './components/GlobeView'
 import MissionDag from './components/MissionDag'
 import { DRONES } from './data/drones'
+import { getBackendOverview } from './services/backendClient'
 import { subscribe } from './services/telemetryClient'
 import './App.css'
 
@@ -25,9 +26,30 @@ export default function App() {
   const [nav, setNav] = useState('Dashboard')
   const [selectedId, setSelectedId] = useState('DRONE-002')
   const [drones, setDrones] = useState(DRONES)
+  const [backend, setBackend] = useState({ status: 'loading' })
   const [failIds, setFailIds] = useState(() => new Set()) // jin drones par failure inject kiya
 
   useEffect(() => subscribe(setDrones), [])
+
+  useEffect(() => {
+    let active = true
+    getBackendOverview()
+      .then((overview) => {
+        if (active) setBackend({ status: 'online', ...overview })
+      })
+      .catch((error) => {
+        if (active) {
+          setBackend({
+            status: 'offline',
+            error: error instanceof Error ? error.message : 'Unable to reach the backend API',
+          })
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const toggleFail = (id) =>
     setFailIds((prev) => {
@@ -84,6 +106,21 @@ export default function App() {
             <div><span>Idle</span><b className="amber">{count('idle')}</b></div>
             <div><span>Offline</span><b>{count('offline')}</b></div>
           </div>
+        </section>
+
+        <section aria-live="polite">
+          <div className="row">
+            <h3>Backend API</h3>
+            <span className="tiny">{backend.status === 'online' ? 'CONNECTED' : backend.status.toUpperCase()}</span>
+          </div>
+          {backend.status === 'online' ? (
+            <div className="stats">
+              <div><span>Registered drones</span><b>{backend.drones.length}</b></div>
+              <div><span>Missions</span><b>{backend.missions.length}</b></div>
+            </div>
+          ) : (
+            <p>{backend.error || 'Waiting for the backend API...'}</p>
+          )}
         </section>
 
         <section>
