@@ -1,10 +1,10 @@
-package com.aerosaga.repository;
+package com.AeroSaga.repository;
 
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.aerosaga.entity.WorkflowSignal;
+import com.AeroSaga.entity.WorkflowSignal;
 
 public interface WorkflowSignalRepository extends JpaRepository<WorkflowSignal, Long> {
 

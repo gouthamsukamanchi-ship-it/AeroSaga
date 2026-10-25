@@ -1,4 +1,4 @@
-package com.aerosaga.entity;
+package com.AeroSaga.entity;
 
 import java.time.LocalDateTime;
 

@@ -21,6 +21,7 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
   const pointsCollectionRef = useRef(null)
   const pointsRef = useRef(new Map())
   const lastTickRef = useRef(0)
+  const lastFocusedIdRef = useRef(null)
   const selectedRef = useRef(selectedId)
   const onSelectRef = useRef(onSelect)
 
@@ -225,6 +226,22 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
 
     lastTickRef.current = performance.now()
   }, [drones])
+
+  useEffect(() => {
+    const drone = drones.find((item) => item.id === selectedId)
+    const camera = viewerRef.current?.camera
+    if (!drone || !camera || lastFocusedIdRef.current === selectedId) return
+
+    lastFocusedIdRef.current = selectedId
+    camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(
+        drone.lon,
+        drone.lat,
+        Math.max(drone.alt + 120_000, 180_000),
+      ),
+      duration: 1.5,
+    })
+  }, [selectedId, drones])
 
   // 3. Zoom controls
   const zoom = (direction) => {

@@ -1,9 +1,9 @@
-package com.aerosaga.repository;
+package com.AeroSaga.repository;
 
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import com.aerosaga.entity.Mission;
+import com.AeroSaga.entity.Mission;
 
 public interface MissionRepository extends JpaRepository<Mission, Long> {
 

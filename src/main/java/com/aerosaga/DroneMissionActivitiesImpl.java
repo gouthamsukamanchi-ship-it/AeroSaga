@@ -1,11 +1,11 @@
-package com.aerosaga;
+package com.AeroSaga;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.stereotype.Component;
 
-import com.aerosaga.service.MissionService;
+import com.AeroSaga.service.MissionService;
 
 @Component
 public class DroneMissionActivitiesImpl implements DroneMissionActivities {

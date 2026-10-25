@@ -1,4 +1,4 @@
-package com.aerosaga;
+package com.AeroSaga;
 
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;

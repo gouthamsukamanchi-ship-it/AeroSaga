@@ -1,5 +1,5 @@
 
-package com.aerosaga.exception;
+package com.AeroSaga.exception;
 
 import java.util.Map;
 

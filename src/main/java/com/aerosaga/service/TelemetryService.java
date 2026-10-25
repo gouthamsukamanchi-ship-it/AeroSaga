@@ -1,15 +1,15 @@
-package com.aerosaga.service;
+package com.AeroSaga.service;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.aerosaga.dto.TelemetryRequest;
-import com.aerosaga.entity.Telemetry;
-import com.aerosaga.exception.ResourceNotFoundException;
-import com.aerosaga.repository.DroneRepository;
-import com.aerosaga.repository.TelemetryRepository;
+import com.AeroSaga.dto.TelemetryRequest;
+import com.AeroSaga.entity.Telemetry;
+import com.AeroSaga.exception.ResourceNotFoundException;
+import com.AeroSaga.repository.DroneRepository;
+import com.AeroSaga.repository.TelemetryRepository;
 
 @Service
 public class TelemetryService {

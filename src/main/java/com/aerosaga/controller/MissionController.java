@@ -1,5 +1,5 @@
 
-package com.aerosaga.controller;
+package com.AeroSaga.controller;
 
 import java.util.List;
 
@@ -18,9 +18,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 
-import com.aerosaga.dto.MissionRequest;
-import com.aerosaga.entity.Mission;
-import com.aerosaga.service.MissionService;
+import com.AeroSaga.dto.MissionRequest;
+import com.AeroSaga.entity.Mission;
+import com.AeroSaga.service.MissionService;
 
 @RestController
 @RequestMapping("/api/missions")

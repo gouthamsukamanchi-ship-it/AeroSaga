@@ -32,7 +32,7 @@ class MissionWorkflowIntegrationTest {
         String droneResponse = mockMvc.perform(post("/api/drones")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Workflow test drone","model":"Test model","status":"AVAILABLE"}
+                                {"name":"Workflow test drone","model":"Test model","location":"Bangalore","status":"AVAILABLE"}
                                 """))
                 .andExpect(status().isCreated())
                 .andReturn()

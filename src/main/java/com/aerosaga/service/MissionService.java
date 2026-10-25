@@ -1,5 +1,5 @@
 
-package com.aerosaga.service;
+package com.AeroSaga.service;
 
 import java.util.List;
 
@@ -10,13 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
 
-import com.aerosaga.dto.MissionRequest;
-import com.aerosaga.entity.Drone;
-import com.aerosaga.entity.Mission;
-import com.aerosaga.exception.ResourceNotFoundException;
-import com.aerosaga.repository.DroneRepository;
-import com.aerosaga.repository.MissionRepository;
-import com.aerosaga.service.WorkflowSignalService;
+import com.AeroSaga.dto.MissionRequest;
+import com.AeroSaga.entity.Drone;
+import com.AeroSaga.entity.Mission;
+import com.AeroSaga.exception.ResourceNotFoundException;
+import com.AeroSaga.repository.DroneRepository;
+import com.AeroSaga.repository.MissionRepository;
+import com.AeroSaga.service.WorkflowSignalService;
 
 @Service
 public class MissionService {
@@ -88,7 +88,7 @@ public class MissionService {
         missionRepository.saveAndFlush(mission);
 
         var workflow = workflowClientProvider.getObject().newWorkflowStub(
-                com.aerosaga.DroneMissionWorkflow.class,
+                com.AeroSaga.DroneMissionWorkflow.class,
                 WorkflowOptions.newBuilder()
                         .setTaskQueue("DRONE_TASK_QUEUE")
                         .setWorkflowId("drone-mission-" + id)

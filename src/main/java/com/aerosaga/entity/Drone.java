@@ -1,5 +1,5 @@
 
-package com.aerosaga.entity;
+package com.AeroSaga.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -19,6 +19,9 @@ public class Drone {
 
     @NotBlank(message = "Drone model is required")
     private String model;
+
+    @NotBlank(message = "Drone location is required")
+    private String location;
 
     @NotBlank(message = "Drone status is required")
     private String status;
@@ -55,6 +58,14 @@ public class Drone {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 
     public String getStatus() {

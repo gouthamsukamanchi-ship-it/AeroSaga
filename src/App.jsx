@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { House, Target, Plane, Globe, ChartColumn, Settings } from 'lucide-react'
 import GlobeView from './components/GlobeView'
 import MissionDag from './components/MissionDag'
-import { DRONES } from './data/drones'
+import { CITIES, DRONES } from './data/drones'
 import {
   createDrone,
   createMission,
@@ -10,7 +10,7 @@ import {
   executeMission,
   getBackendOverview,
 } from './services/backendClient'
-import { subscribe } from './services/telemetryClient'
+import { TICK_MS } from './services/telemetryClient'
 import './App.css'
 
 const NAV = [
@@ -44,7 +44,7 @@ function latestTelemetry(telemetry, droneId) {
 export default function App() {
   const [nav, setNav] = useState('Dashboard')
   const [selectedId, setSelectedId] = useState(null)
-  const [simulation, setSimulation] = useState(DRONES)
+  const [orbitTime, setOrbitTime] = useState(0)
   const [backend, setBackend] = useState({
     status: 'loading',
     drones: [],
@@ -54,7 +54,12 @@ export default function App() {
   })
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState('')
-  const [droneForm, setDroneForm] = useState({ name: '', model: '' })
+  const [droneForm, setDroneForm] = useState({
+    name: '',
+    model: '',
+    location: '',
+    status: 'AVAILABLE',
+  })
   const [missionForm, setMissionForm] = useState({
     droneId: '',
     missionName: '',
@@ -95,7 +100,14 @@ export default function App() {
     }
   }, [])
 
-  useEffect(() => subscribe(setSimulation), [])
+  useEffect(() => {
+    const startedAt = performance.now()
+    const timer = setInterval(
+      () => setOrbitTime((performance.now() - startedAt) / 1000),
+      TICK_MS,
+    )
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const initialRefresh = setTimeout(refreshBackend, 0)
@@ -106,33 +118,66 @@ export default function App() {
     }
   }, [refreshBackend])
 
-  const drones = useMemo(() => backend.drones.map((drone) => {
-    const sample = simulation[(Number(drone.id) - 1 + simulation.length) % simulation.length]
-    const telemetry = latestTelemetry(backend.telemetry, drone.id)
-    const mission = backend.missions.find(
-      (item) => String(item.drone?.id) === String(drone.id) &&
-        ['PENDING', 'RUNNING', 'IN_PROGRESS'].includes(item.status?.toUpperCase()),
-    )
+  const drones = useMemo(() => {
+    const cityRanks = new Map()
+    return backend.drones.map((drone) => {
+      const numericId = Number(drone.id)
+      const sample = DRONES[(numericId - 1 + DRONES.length) % DRONES.length]
+      const location = CITIES.find(
+        (city) => city.name.toLowerCase() === drone.location?.trim().toLowerCase(),
+      )
+      const telemetry = latestTelemetry(backend.telemetry, drone.id)
+      const isInFlight = ['IN_FLIGHT', 'IN_PROGRESS', 'RUNNING'].includes(
+        drone.status?.toUpperCase(),
+      )
+      const rank = location ? cityRanks.get(location.name) ?? 0 : 0
+      if (location) cityRanks.set(location.name, rank + 1)
 
-    return {
-      ...sample,
-      id: String(drone.id),
-      backendId: drone.id,
-      name: drone.name,
-      model: drone.model,
-      status: displayStatus(drone.status),
-      lat: telemetry?.latitude ?? sample.lat,
-      lon: telemetry?.longitude ?? sample.lon,
-      alt: telemetry?.altitude ?? sample.alt,
-      battery: telemetry?.batteryLevel ?? sample.battery,
-      speed: sample.speed,
-      heading: sample.heading,
-      mission: mission?.missionName || 'No active mission',
-      missionId: mission?.id,
-      telemetryIsLive: Boolean(telemetry),
-      dest: sample.dest,
-    }
-  }), [backend.drones, backend.missions, backend.telemetry, simulation])
+      const ring = Math.floor(rank / 10)
+      const positionInRing = rank % 10
+      const radius = 0.18 + ring * 0.16
+      const phase = positionInRing * (2 * Math.PI / 10) + (ring % 2) * Math.PI / 10
+      const direction = ring % 2 === 0 ? 1 : -1
+      const period = 35 + ring * 8
+      const angle = phase + direction * (2 * Math.PI / period) * orbitTime
+      const orbitLatitude = location
+        ? location.lat + radius * Math.sin(angle)
+        : sample.lat
+      const orbitLongitude = location
+        ? location.lon + (radius * Math.cos(angle)) /
+          Math.cos((location.lat * Math.PI) / 180)
+        : sample.lon
+      const isOffline = drone.status?.toUpperCase() === 'OFFLINE'
+      const mission = backend.missions.find(
+        (item) => String(item.drone?.id) === String(drone.id) &&
+          ['PENDING', 'RUNNING', 'IN_PROGRESS'].includes(item.status?.toUpperCase()),
+      )
+
+      return {
+        ...sample,
+        id: String(drone.id),
+        backendId: drone.id,
+        name: drone.name,
+        model: drone.model,
+        location: drone.location,
+        status: displayStatus(drone.status),
+        lat: isInFlight
+          ? telemetry?.latitude ?? orbitLatitude
+          : isOffline ? location?.lat ?? sample.lat : orbitLatitude,
+        lon: isInFlight
+          ? telemetry?.longitude ?? orbitLongitude
+          : isOffline ? location?.lon ?? sample.lon : orbitLongitude,
+        alt: telemetry?.altitude ?? 100 + ring * 35,
+        battery: telemetry?.batteryLevel ?? sample.battery,
+        speed: sample.speed,
+        heading: (angle * 180 / Math.PI + 360) % 360,
+        mission: mission?.missionName || 'No active mission',
+        missionId: mission?.id,
+        telemetryIsLive: Boolean(telemetry),
+        dest: location ? [location.lat, location.lon] : sample.dest,
+      }
+    })
+  }, [backend.drones, backend.missions, backend.telemetry, orbitTime])
 
   const selected = drones.find((drone) => drone.id === selectedId)
   const selectedMission = selected
@@ -161,8 +206,9 @@ export default function App() {
   const submitDrone = (event) => {
     event.preventDefault()
     performAction(async () => {
-      await createDrone({ ...droneForm, status: 'AVAILABLE' })
-      setDroneForm({ name: '', model: '' })
+      const drone = await createDrone(droneForm)
+      setSelectedId(String(drone.id))
+      setDroneForm({ name: '', model: '', location: '', status: 'AVAILABLE' })
     })
   }
 
@@ -278,6 +324,26 @@ export default function App() {
               value={droneForm.model}
               onChange={(event) => setDroneForm({ ...droneForm, model: event.target.value })}
             />
+            <select
+              aria-label="Drone location"
+              required
+              value={droneForm.location}
+              onChange={(event) => setDroneForm({ ...droneForm, location: event.target.value })}
+            >
+              <option value="">Choose location</option>
+              {CITIES.map((city) => (
+                <option key={city.name} value={city.name}>{city.name}</option>
+              ))}
+            </select>
+            <select
+              aria-label="Drone status"
+              required
+              value={droneForm.status}
+              onChange={(event) => setDroneForm({ ...droneForm, status: event.target.value })}
+            >
+              <option value="AVAILABLE">Active</option>
+              <option value="OFFLINE">Offline</option>
+            </select>
             <button className="inject" disabled={busy || backend.status !== 'online'}>Register drone</button>
           </form>
         </section>
@@ -327,6 +393,7 @@ export default function App() {
               <div className="drone-name">{selected.name}</div>
               <div className="tiny">{selected.model} · {selected.telemetryIsLive ? 'LIVE TELEMETRY' : 'SIMULATED POSITION'}</div>
               <div className="grid2">
+                <div><span>Location</span><b>{selected.location || 'Unknown'}</b></div>
                 <div><span>Altitude</span><b>{selected.alt} m</b></div>
                 <div><span>Speed</span><b>{selected.speed} km/h*</b></div>
                 <div><span>Heading</span><b>{selected.heading}°*</b></div>
