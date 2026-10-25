@@ -1,6 +1,6 @@
-# Arrow Saga — Drone Fleet Simulation
+# AeroSaga — Drone Fleet Simulation
 
-Arrow Saga is a drone fleet simulation project focused on visualizing drone positions, movement, and telemetry through a web-based dashboard.
+AeroSaga is a drone fleet simulation project focused on visualizing drone positions, movement, and telemetry through a web-based dashboard.
 
 ## Tech Stack
 
