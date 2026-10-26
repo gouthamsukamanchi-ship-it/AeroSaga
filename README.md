@@ -113,3 +113,18 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the Oxlint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+
+## Integration Testing
+
+The `goutham-integration-testing` branch is used to validate the integrated
+AeroSaga system. It brings together the React frontend, Spring Boot backend,
+REST APIs, MySQL database, and Temporal workflows for end-to-end integration
+testing.
+
+### Main Components
+
+- React + Vite frontend
+- Spring Boot backend
+- REST API layer
+- MySQL database
+- Temporal workflow engine
