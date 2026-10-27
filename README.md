@@ -128,3 +128,16 @@ testing.
 - REST API layer
 - MySQL database
 - Temporal workflow engine
+
+## Integration Testing
+
+The project was tested across the frontend, Spring Boot backend, REST APIs, database connectivity, and Temporal workflow integration. The frontend runs through Vite, while the backend exposes the required API endpoints. Temporal is used for workflow execution and signal handling.
+
+### Local Development
+
+1. Start the required database service.
+2. Start the Temporal development server.
+3. Start the Spring Boot backend.
+4. Start the Vite frontend.
+5. Verify the API endpoints and workflow integration from the dashboard.
+
