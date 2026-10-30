@@ -1,13 +1,13 @@
 
-package com.AeroSaga.service;
+package com.aerosaga.service;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.AeroSaga.entity.Drone;
-import com.AeroSaga.repository.DroneRepository;
-import com.AeroSaga.exception.ResourceNotFoundException;
+import com.aerosaga.entity.Drone;
+import com.aerosaga.repository.DroneRepository;
+import com.aerosaga.exception.ResourceNotFoundException;
 
 @Service
 public class DroneService {

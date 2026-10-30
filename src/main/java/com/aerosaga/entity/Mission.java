@@ -1,5 +1,5 @@
 
-package com.AeroSaga.entity;
+package com.aerosaga.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

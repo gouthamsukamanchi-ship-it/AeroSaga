@@ -1,8 +1,8 @@
 
-package com.AeroSaga.repository;
+package com.aerosaga.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.AeroSaga.entity.Drone;
+import com.aerosaga.entity.Drone;
 
 public interface DroneRepository extends JpaRepository<Drone, Long> {
 

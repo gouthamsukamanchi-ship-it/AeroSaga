@@ -1,4 +1,4 @@
-package com.AeroSaga.exception;
+package com.aerosaga.exception;
 
 public class ResourceNotFoundException extends RuntimeException {
 

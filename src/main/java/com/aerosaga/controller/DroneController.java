@@ -1,5 +1,5 @@
 
-package com.AeroSaga.controller;
+package com.aerosaga.controller;
 
 import java.util.List;
 
@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.AeroSaga.entity.Drone;
-import com.AeroSaga.service.DroneService;
+import com.aerosaga.entity.Drone;
+import com.aerosaga.service.DroneService;
 
 import jakarta.validation.Valid;
 
