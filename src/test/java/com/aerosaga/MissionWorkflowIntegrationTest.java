@@ -80,6 +80,43 @@ class MissionWorkflowIntegrationTest {
                 .andExpect(jsonPath("$[*].signalType", hasItem("RETURN_HOME")));
     }
 
+
+    @Test
+    void createDroneWithInvalidDataShouldReturnBadRequest() throws Exception {
+        mockMvc.perform(post("/api/drones")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "",
+                                    "model": "",
+                                    "location": "",
+                                    "status": ""
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.name").value("Drone name is required"))
+                .andExpect(jsonPath("$.model").value("Drone model is required"))
+                .andExpect(jsonPath("$.location").value("Drone location is required"))
+                .andExpect(jsonPath("$.status").value("Drone status is required"));
+    }
+
+    @Test
+    void createMissionWithInvalidDataShouldReturnBadRequest() throws Exception {
+        mockMvc.perform(post("/api/missions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "droneId": -1,
+                                    "missionName": "",
+                                    "destination": ""
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.droneId").value("Drone ID must be positive"))
+                .andExpect(jsonPath("$.missionName").value("Mission name is required"))
+                .andExpect(jsonPath("$.destination").value("Destination is required"));
+    }
+
     private record MissionRequestBody(
             long droneId,
             String missionName,
