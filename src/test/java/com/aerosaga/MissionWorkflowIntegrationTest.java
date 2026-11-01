@@ -73,11 +73,13 @@ class MissionWorkflowIntegrationTest {
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.status").value("COMPLETED")));
 
-        mockMvc.perform(get("/api/workflow-signals/drone/{droneId}", droneId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].signalType", hasItem("TAKEOFF")))
-                .andExpect(jsonPath("$[*].signalType", hasItem("TRAVEL")))
-                .andExpect(jsonPath("$[*].signalType", hasItem("RETURN_HOME")));
+       mockMvc.perform(get("/api/workflow-signals/drone/{droneId}", droneId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[*].signalType", hasItem("TAKEOFF")))
+        .andExpect(jsonPath("$[*].signalType", hasItem("TRAVEL")))
+        .andExpect(jsonPath("$[*].signalType", hasItem("RETURN_HOME")))
+        .andExpect(jsonPath("$[*].signalStatus", hasItem("RETRYING")))
+        .andExpect(jsonPath("$[*].signalStatus", hasItem("COMPLETED")));
     }
 
 
