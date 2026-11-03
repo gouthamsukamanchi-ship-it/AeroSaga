@@ -1,16 +1,25 @@
-package com.AeroSaga.repository;
+
+package com.aerosaga.repository;
+
+import com.aerosaga.entity.SafetyEvent;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import com.AeroSaga.entity.SafetyEvent;
-
+@Repository
 public interface SafetyEventRepository
-        extends JpaRepository<SafetyEvent, Long> {
+        extends JpaRepository<SafetyEvent, Integer> {
 
-    List<SafetyEvent> findByDroneIdOrderByCreatedAtDesc(Long droneId);
+    List<SafetyEvent> findByDroneId(Integer droneId);
 
-    List<SafetyEvent> findByMissionIdOrderByCreatedAtDesc(Long missionId);
+    List<SafetyEvent> findByMissionId(Integer missionId);
 
-    List<SafetyEvent> findAllByOrderByCreatedAtDesc();
+    List<SafetyEvent> findBySeverity(String severity);
+
+    List<SafetyEvent> findByResolved(Boolean resolved);
+
+    List<SafetyEvent> findByWorkflowStatus(String workflowStatus);
+
+    List<SafetyEvent> findAllByOrderByDetectedAtDesc();
 }
