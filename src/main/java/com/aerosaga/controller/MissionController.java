@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import jakarta.validation.Valid;
 
 import com.aerosaga.dto.MissionRequest;
+import com.aerosaga.dto.EmergencyRequest;
 import com.aerosaga.entity.Mission;
 import com.aerosaga.service.MissionService;
 
@@ -53,6 +54,28 @@ public class MissionController {
                     "A workflow already exists for this mission",
                     workflowAlreadyStarted
             );
+        }
+    }
+
+
+    @PostMapping("/{id}/emergency")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public java.util.Map<String, String> requestEmergency(
+            @PathVariable Long id,
+            @Valid @RequestBody EmergencyRequest request) {
+        try {
+            missionService.requestEmergency(id, request.reason());
+            return java.util.Map.of(
+                    "message", "Emergency return requested",
+                    "missionId", id.toString(),
+                    "reason", request.reason()
+            );
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
     }
 

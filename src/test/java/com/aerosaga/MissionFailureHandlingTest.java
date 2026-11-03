@@ -36,6 +36,10 @@ class MissionFailureHandlingTest {
                 return "RETURN_SUCCESS";
             }
 
+            public String emergencyReturnHome(String id, String reason) {
+                return "EMERGENCY_RETURN_SUCCESS";
+            }
+
             public void failMission(String id) {
                 failureRecorded.set(true);
             }

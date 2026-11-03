@@ -8,11 +8,14 @@ import java.time.Duration;
 
 public class DroneMissionWorkflowImpl implements DroneMissionWorkflow {
 
+    private boolean emergencyRequested = false;
+    private String emergencyReason = "";
+
     private final DroneMissionActivities activities =
             Workflow.newActivityStub(
                     DroneMissionActivities.class,
                     ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofSeconds(10))
+                            .setStartToCloseTimeout(Duration.ofSeconds(20))
                             .setRetryOptions(
                                     RetryOptions.newBuilder()
                                             .setInitialInterval(Duration.ofSeconds(2))
@@ -24,6 +27,23 @@ public class DroneMissionWorkflowImpl implements DroneMissionWorkflow {
             );
 
     @Override
+    public void requestEmergency(String reason) {
+        emergencyRequested = true;
+        emergencyReason = reason;
+        Workflow.getLogger(DroneMissionWorkflowImpl.class)
+                .warn("Emergency requested: " + reason);
+    }
+
+    private boolean handleEmergency(String missionId) {
+        if (!emergencyRequested) {
+            return false;
+        }
+
+        activities.emergencyReturnHome(missionId, emergencyReason);
+        return true;
+    }
+
+    @Override
     public String executeMission(String missionId) {
 
         Workflow.getLogger(DroneMissionWorkflowImpl.class)
@@ -31,9 +51,21 @@ public class DroneMissionWorkflowImpl implements DroneMissionWorkflow {
 
         try {
             activities.takeOff(missionId);
+
+            if (handleEmergency(missionId)) {
+                return "Emergency return completed: " + missionId;
+            }
+
             activities.travel(missionId);
+
+            if (handleEmergency(missionId)) {
+                return "Emergency return completed: " + missionId;
+            }
+
             activities.returnHome(missionId);
+
             return "Mission completed: " + missionId;
+
         } catch (RuntimeException exception) {
             activities.failMission(missionId);
             throw exception;

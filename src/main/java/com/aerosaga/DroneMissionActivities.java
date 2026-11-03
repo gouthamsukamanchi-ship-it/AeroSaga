@@ -16,5 +16,8 @@ public interface DroneMissionActivities {
     String returnHome(String missionId);
 
     @ActivityMethod
+    String emergencyReturnHome(String missionId, String reason);
+
+    @ActivityMethod
     void failMission(String missionId);
 }

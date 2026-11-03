@@ -83,6 +83,57 @@ class MissionWorkflowIntegrationTest {
     }
 
 
+
+    @Test
+    void emergencyRequestTriggersReturnToHome() throws Exception {
+        String droneResponse = mockMvc.perform(post("/api/drones")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Emergency test drone","model":"Test model","location":"Bangalore","status":"AVAILABLE"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        long droneId = objectMapper.readTree(droneResponse).get("id").asLong();
+
+        String missionResponse = mockMvc.perform(post("/api/missions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new MissionRequestBody(
+                                droneId, "Emergency test mission", "Test destination"
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        long missionId = objectMapper.readTree(missionResponse).get("id").asLong();
+
+        mockMvc.perform(post("/api/missions/{id}/execute", missionId))
+                .andExpect(status().isAccepted());
+
+        mockMvc.perform(post("/api/missions/{id}/emergency", missionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reason":"Critical battery level"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.message").value("Emergency return requested"));
+
+        await()
+                .atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> mockMvc
+                        .perform(get("/api/missions/{id}", missionId))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.status").value("EMERGENCY_RETURNED")));
+
+        mockMvc.perform(get("/api/workflow-signals/drone/{droneId}", droneId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].signalType", hasItem("EMERGENCY_RETURN")))
+                .andExpect(jsonPath("$[*].signalType", hasItem("EMERGENCY_REQUEST")));
+    }
+
     @Test
     void createDroneWithInvalidDataShouldReturnBadRequest() throws Exception {
         mockMvc.perform(post("/api/drones")

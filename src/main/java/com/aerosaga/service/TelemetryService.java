@@ -16,12 +16,16 @@ public class TelemetryService {
 
     private final TelemetryRepository telemetryRepository;
     private final DroneRepository droneRepository;
+    private final SafetyRuleEngine safetyRuleEngine;
 
     public TelemetryService(
             TelemetryRepository telemetryRepository,
-            DroneRepository droneRepository) {
+            DroneRepository droneRepository,
+            SafetyRuleEngine safetyRuleEngine) {
+
         this.telemetryRepository = telemetryRepository;
         this.droneRepository = droneRepository;
+        this.safetyRuleEngine = safetyRuleEngine;
     }
 
     public List<Telemetry> getAllTelemetry() {
@@ -29,16 +33,22 @@ public class TelemetryService {
     }
 
     public List<Telemetry> getTelemetryByDrone(Long droneId) {
+
         if (!droneRepository.existsById(droneId)) {
             throw new ResourceNotFoundException(
                     "Drone not found with id: " + droneId
             );
         }
-        return telemetryRepository.findByDroneIdOrderByRecordedAtDesc(droneId);
+
+        return telemetryRepository
+                .findByDroneIdOrderByRecordedAtDesc(droneId);
     }
 
     @Transactional
-    public Telemetry recordTelemetry(Long droneId, TelemetryRequest request) {
+    public Telemetry recordTelemetry(
+            Long droneId,
+            TelemetryRequest request) {
+
         if (!droneRepository.existsById(droneId)) {
             throw new ResourceNotFoundException(
                     "Drone not found with id: " + droneId
@@ -51,6 +61,15 @@ public class TelemetryService {
         telemetry.setLatitude(request.getLatitude());
         telemetry.setLongitude(request.getLongitude());
         telemetry.setAltitude(request.getAltitude());
-        return telemetryRepository.save(telemetry);
+
+        Telemetry saved = telemetryRepository.save(telemetry);
+
+        // AeroSaga Sentinel: automatic battery safety evaluation
+        safetyRuleEngine.evaluateBattery(
+                droneId,
+                request.getBatteryLevel()
+        );
+
+        return saved;
     }
 }

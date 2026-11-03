@@ -53,6 +53,15 @@ public class DroneMissionActivitiesImpl implements DroneMissionActivities {
             );
         }
 
+        System.out.println("Sentinel: monitoring drone telemetry during travel...");
+
+        try {
+            Thread.sleep(15000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Travel interrupted", e);
+        }
+
         recordSignal(missionId, "TRAVEL", "COMPLETED", "Travel completed");
         System.out.println("✅ Travel successful!");
 
@@ -68,6 +77,22 @@ public class DroneMissionActivitiesImpl implements DroneMissionActivities {
         recordSignal(missionId, "RETURN_HOME", "COMPLETED", "Mission completed");
 
         return "RETURN_SUCCESS";
+    }
+
+    @Override
+    public String emergencyReturnHome(String missionId, String reason) {
+        System.out.println("EMERGENCY RETURN initiated: " + missionId);
+        System.out.println("Reason: " + reason);
+
+        missionService.updateWorkflowStatus(missionId, "EMERGENCY_RETURNED");
+        recordSignal(
+                missionId,
+                "EMERGENCY_RETURN",
+                "COMPLETED",
+                "Emergency return completed. Reason: " + reason
+        );
+
+        return "EMERGENCY_RETURN_SUCCESS";
     }
 
     @Override
