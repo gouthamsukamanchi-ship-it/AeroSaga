@@ -1,4 +1,3 @@
-
 package com.aerosaga.service;
 
 import java.util.List;
@@ -16,7 +15,6 @@ import com.aerosaga.entity.Mission;
 import com.aerosaga.exception.ResourceNotFoundException;
 import com.aerosaga.repository.DroneRepository;
 import com.aerosaga.repository.MissionRepository;
-import com.aerosaga.service.WorkflowSignalService;
 
 @Service
 public class MissionService {
@@ -44,25 +42,19 @@ public class MissionService {
     public Mission getMissionById(Long id) {
         return missionRepository.findById(id)
                 .orElseThrow(() ->
-                    new ResourceNotFoundException(
-                        "Mission not found with id: " + id
-                    )
-                );
+                    new ResourceNotFoundException("Mission not found with id: " + id));
     }
 
     @Transactional
     public Mission createMission(MissionRequest request) {
+        DroneCityCoordinates.require(request.getDestination());
+
         Drone drone = droneRepository.findById(request.getDroneId())
                 .orElseThrow(() ->
-                    new ResourceNotFoundException(
-                        "Drone not found with id: " + request.getDroneId()
-                    )
-                );
+                    new ResourceNotFoundException("Drone not found with id: " + request.getDroneId()));
 
         if (!"AVAILABLE".equalsIgnoreCase(drone.getStatus())) {
-            throw new IllegalStateException(
-                "Drone is not available for a mission"
-            );
+            throw new IllegalStateException("Drone is not available for a mission");
         }
 
         Mission mission = new Mission();
@@ -70,6 +62,7 @@ public class MissionService {
         mission.setDestination(request.getDestination());
         mission.setStatus("PENDING");
         mission.setDrone(drone);
+
         drone.setStatus("IN_PROGRESS");
         droneRepository.save(drone);
 
@@ -78,10 +71,9 @@ public class MissionService {
 
     public Mission executeMission(Long id) {
         Mission mission = getMissionById(id);
+
         if (!"PENDING".equalsIgnoreCase(mission.getStatus())) {
-            throw new IllegalStateException(
-                "Only pending missions can be executed"
-            );
+            throw new IllegalStateException("Only pending missions can be executed");
         }
 
         mission.setStatus("RUNNING");
@@ -94,6 +86,7 @@ public class MissionService {
                         .setWorkflowId("drone-mission-" + id)
                         .build()
         );
+
         WorkflowClient.start(workflow::executeMission, id.toString());
         return getMissionById(id);
     }
@@ -103,23 +96,19 @@ public class MissionService {
 
         if (!"RUNNING".equalsIgnoreCase(mission.getStatus())) {
             throw new IllegalStateException(
-                    "Emergency can only be requested for a running mission"
-            );
+                    "Emergency can only be requested for a running mission");
         }
 
         if (reason == null || reason.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Emergency reason is required"
-            );
+            throw new IllegalArgumentException("Emergency reason is required");
         }
 
         WorkflowClient client = workflowClientProvider.getObject();
 
-        com.aerosaga.DroneMissionWorkflow workflow =
-                client.newWorkflowStub(
-                        com.aerosaga.DroneMissionWorkflow.class,
-                        "drone-mission-" + id
-                );
+        com.aerosaga.DroneMissionWorkflow workflow = client.newWorkflowStub(
+                com.aerosaga.DroneMissionWorkflow.class,
+                "drone-mission-" + id
+        );
 
         workflow.requestEmergency(reason);
 
@@ -139,6 +128,7 @@ public class MissionService {
             String message) {
         long id = parseMissionId(missionId);
         Mission mission = getMissionById(id);
+
         workflowSignalService.record(
                 id,
                 mission.getDrone().getId(),
@@ -154,6 +144,11 @@ public class MissionService {
         Mission mission = getMissionById(id);
         mission.setStatus(status);
 
+        if ("RUNNING".equals(status)) {
+            mission.getDrone().setStatus("IN_FLIGHT");
+            droneRepository.save(mission.getDrone());
+        }
+
         if ("COMPLETED".equals(status)
                 || "FAILED".equals(status)
                 || "EMERGENCY_RETURNED".equals(status)) {
@@ -161,6 +156,7 @@ public class MissionService {
             drone.setStatus("AVAILABLE");
             droneRepository.save(drone);
         }
+
         missionRepository.save(mission);
     }
 
@@ -181,7 +177,6 @@ public class MissionService {
 
     public Mission updateMission(Long id, Mission updatedMission) {
         Mission existingMission = getMissionById(id);
-
         existingMission.setMissionName(updatedMission.getMissionName());
         existingMission.setDestination(updatedMission.getDestination());
 
@@ -196,17 +191,18 @@ public class MissionService {
     @Transactional
     public void deleteMission(Long id) {
         Mission mission = getMissionById(id);
+
         if (!"PENDING".equalsIgnoreCase(mission.getStatus())) {
-            throw new IllegalStateException(
-                    "Only pending missions can be deleted"
-            );
+            throw new IllegalStateException("Only pending missions can be deleted");
         }
 
         Drone drone = mission.getDrone();
+
         if (drone != null && "IN_PROGRESS".equalsIgnoreCase(drone.getStatus())) {
             drone.setStatus("AVAILABLE");
             droneRepository.save(drone);
         }
+
         missionRepository.delete(mission);
     }
 }

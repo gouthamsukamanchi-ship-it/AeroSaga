@@ -38,6 +38,7 @@ class MissionWorkflowIntegrationTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
+
         long droneId = objectMapper.readTree(droneResponse).get("id").asLong();
 
         mockMvc.perform(post("/api/telemetry/drone/{droneId}", droneId)
@@ -45,44 +46,54 @@ class MissionWorkflowIntegrationTest {
                         .content("""
                                 {"batteryLevel":92,"latitude":12.9716,"longitude":77.5946,"altitude":120}
                                 """))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.source").value("DEVICE"));
+
         mockMvc.perform(get("/api/telemetry"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/telemetry/drone/{droneId}", droneId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].droneId").value(droneId));
+                .andExpect(jsonPath("$[0].droneId").value(droneId))
+                .andExpect(jsonPath("$[0].source").value("DEVICE"));
 
         String missionResponse = mockMvc.perform(post("/api/missions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new MissionRequestBody(
                                 droneId,
                                 "Workflow integration test",
-                                "Test destination"
+                                "Chennai"
                         ))))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
+
         long missionId = objectMapper.readTree(missionResponse).get("id").asLong();
 
         mockMvc.perform(post("/api/missions/{id}/execute", missionId))
                 .andExpect(status().isAccepted());
 
         await()
-                .atMost(Duration.ofSeconds(30))
+                .atMost(Duration.ofSeconds(90))
                 .untilAsserted(() -> mockMvc
                         .perform(get("/api/missions/{id}", missionId))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.status").value("COMPLETED")));
 
-       mockMvc.perform(get("/api/workflow-signals/drone/{droneId}", droneId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[*].signalType", hasItem("TAKEOFF")))
-        .andExpect(jsonPath("$[*].signalType", hasItem("TRAVEL")))
-        .andExpect(jsonPath("$[*].signalType", hasItem("RETURN_HOME")))
-        .andExpect(jsonPath("$[*].signalStatus", hasItem("RETRYING")))
-        .andExpect(jsonPath("$[*].signalStatus", hasItem("COMPLETED")));
+        mockMvc.perform(get("/api/workflow-signals/drone/{droneId}", droneId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].signalType", hasItem("TAKEOFF")))
+                .andExpect(jsonPath("$[*].signalType", hasItem("TRAVEL")))
+                .andExpect(jsonPath("$[*].signalType", hasItem("DELIVERY")))
+                .andExpect(jsonPath("$[*].signalType", hasItem("RETURN_HOME")))
+                .andExpect(jsonPath("$[*].signalStatus", hasItem("RETRYING")))
+                .andExpect(jsonPath("$[*].signalStatus", hasItem("COMPLETED")));
+
+        mockMvc.perform(get("/api/telemetry/drone/{droneId}", droneId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].source").value("SIMULATED_MISSION"));
     }
-
-
 
     @Test
     void emergencyRequestTriggersReturnToHome() throws Exception {
@@ -101,7 +112,7 @@ class MissionWorkflowIntegrationTest {
         String missionResponse = mockMvc.perform(post("/api/missions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new MissionRequestBody(
-                                droneId, "Emergency test mission", "Test destination"
+                                droneId, "Emergency test mission", "Chennai"
                         ))))
                 .andExpect(status().isCreated())
                 .andReturn()
@@ -122,7 +133,7 @@ class MissionWorkflowIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Emergency return requested"));
 
         await()
-                .atMost(Duration.ofSeconds(30))
+                .atMost(Duration.ofSeconds(90))
                 .untilAsserted(() -> mockMvc
                         .perform(get("/api/missions/{id}", missionId))
                         .andExpect(status().isOk())

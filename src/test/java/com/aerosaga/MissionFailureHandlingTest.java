@@ -32,6 +32,10 @@ class MissionFailureHandlingTest {
                 throw new RuntimeException("Permanent travel failure");
             }
 
+            public String completeDelivery(String id) {
+                return "DELIVERY_SUCCESS";
+            }
+
             public String returnHome(String id) {
                 return "RETURN_SUCCESS";
             }

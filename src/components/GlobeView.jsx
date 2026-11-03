@@ -1,10 +1,8 @@
-
 import { useEffect, useRef } from 'react'
 import * as Cesium from 'cesium'
 import { Plus, Minus, LocateFixed } from 'lucide-react'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
-import { CITIES, STATUS_COLORS } from '../data/drones'
-import { TICK_MS } from '../services/telemetryClient'
+import { CITIES } from '../data/drones'
 
 const token = import.meta.env.VITE_CESIUM_ION_TOKEN
 
@@ -12,28 +10,30 @@ Cesium.Ion.defaultAccessToken = token
 
 const HOME = Cesium.Cartesian3.fromDegrees(79.5, 19.5, 8_000_000)
 
-// Reusable Cartesian3 object for smooth drone interpolation
-const scratch = new Cesium.Cartesian3()
+// Orbital configuration
+const DRONES_PER_CITY = 50
+const LANES = 5
+const DRONES_PER_LANE = DRONES_PER_CITY / LANES
 
-export default function GlobeView({ drones, selectedId, onSelect }) {
+// Angular radii in degrees
+const ORBIT_RADII = [0.16, 0.28, 0.40, 0.52, 0.64]
+
+// All lanes rotate in the same direction and at the same speed.
+const ORBIT_SPEED = 0.00012
+const ORBIT_DIRECTION = 1
+
+const ORANGE = Cesium.Color.fromCssColorString('#ffad42')
+const CYAN = Cesium.Color.fromCssColorString('#19d3c5')
+
+export default function GlobeView() {
   const containerRef = useRef(null)
   const viewerRef = useRef(null)
-  const pointsCollectionRef = useRef(null)
-  const pointsRef = useRef(new Map())
-  const lastTickRef = useRef(0)
-  const lastFocusedIdRef = useRef(null)
-  const selectedRef = useRef(selectedId)
-  const onSelectRef = useRef(onSelect)
+  const simulationRef = useRef([])
+  const selectedRingRef = useRef(null)
 
-  useEffect(() => {
-    selectedRef.current = selectedId
-    onSelectRef.current = onSelect
-  }, [selectedId, onSelect])
-
-  // 1. Initialize the globe, markers, and labels.
+  // Initialize Cesium
   useEffect(() => {
     if (!containerRef.current) return
-    const pointEntries = pointsRef.current
 
     const baseLayer = token
       ? Cesium.ImageryLayer.fromWorldImagery()
@@ -55,33 +55,59 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
       fullscreenButton: false,
       infoBox: false,
       selectionIndicator: false,
+      requestRenderMode: false,
     })
+
+    viewerRef.current = viewer
 
     viewer.scene.globe.baseColor =
       Cesium.Color.fromCssColorString('#0a2747')
 
-    const points = viewer.scene.primitives.add(
+    const primitives = viewer.scene.primitives
+
+    // Drone markers
+    const dronePoints = primitives.add(
       new Cesium.PointPrimitiveCollection(),
     )
-    pointsCollectionRef.current = points
-    lastTickRef.current = performance.now()
 
-    // Selected drone ring
-    const ring = points.add({
-      position: Cesium.Cartesian3.ZERO,
-      show: false,
-      color: Cesium.Color.TRANSPARENT,
-      pixelSize: 24,
-      outlineColor: Cesium.Color.fromCssColorString('#19d3c5'),
-      outlineWidth: 2,
-    })
+    // City markers
+    const cityPoints = primitives.add(
+      new Cesium.PointPrimitiveCollection(),
+    )
+
+    // Orbital paths
+    const orbitPaths = primitives.add(
+      new Cesium.PolylineCollection(),
+    )
 
     // City labels
-    const labels = viewer.scene.primitives.add(
+    const labels = primitives.add(
       new Cesium.LabelCollection(),
     )
 
-    CITIES.forEach((city) => {
+    const simulation = []
+
+    // Create 50 simulated drones for every city
+    CITIES.forEach((city, cityIndex) => {
+      const latitudeCorrection = Math.max(
+        0.2,
+        Math.cos(Cesium.Math.toRadians(city.lat)),
+      )
+
+      // City center marker
+      cityPoints.add({
+        position: Cesium.Cartesian3.fromDegrees(
+          city.lon,
+          city.lat,
+          0,
+        ),
+        color: Cesium.Color.fromCssColorString('#ffd166'),
+        pixelSize: 9,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 1,
+      })
+
+      // City label
       labels.add({
         position: Cesium.Cartesian3.fromDegrees(
           city.lon,
@@ -96,154 +122,133 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
         ).withAlpha(0.85),
         pixelOffset: new Cesium.Cartesian2(0, -26),
       })
-    })
 
-    // City center markers
-    CITIES.forEach((city) => {
-      points.add({
-        position: Cesium.Cartesian3.fromDegrees(
-          city.lon,
-          city.lat,
-          0,
-        ),
-        color: Cesium.Color.fromCssColorString('#ffd166'),
-        pixelSize: 7,
-      })
-    })
+      // Five circular orbital lanes
+      ORBIT_RADII.forEach((radius, laneIndex) => {
+        const positions = []
 
-    // Animate drone positions on every rendered frame
-    const removePreRender =
-      viewer.scene.preRender.addEventListener(() => {
-        const progress = Math.min(
-          1,
-          (performance.now() - lastTickRef.current) / TICK_MS,
-        )
+        // Draw complete circular path
+        for (let i = 0; i <= 240; i++) {
+          const angle = (i / 240) * Math.PI * 2
 
-        pointEntries.forEach((entry) => {
-          Cesium.Cartesian3.lerp(
-            entry.from,
-            entry.to,
-            progress,
-            scratch,
+          const lat =
+            city.lat + radius * Math.sin(angle)
+
+          const lon =
+            city.lon +
+            (radius / latitudeCorrection) *
+              Math.cos(angle)
+
+          positions.push(
+            Cesium.Cartesian3.fromDegrees(
+              lon,
+              lat,
+              1500,
+            ),
           )
+        }
 
-          // Each drone needs its own position object.
-          // Copy scratch to avoid all markers sharing one position.
-          entry.point.position = Cesium.Cartesian3.clone(
-            scratch,
-            entry.point.position,
-          )
+        orbitPaths.add({
+          positions,
+          width: 2,
+          material: Cesium.Material.fromType('Color', {
+            color: ORANGE.withAlpha(
+              0.25 + laneIndex * 0.035,
+            ),
+          }),
         })
 
-        const selected = pointsRef.current.get(
-          selectedRef.current,
-        )
+        // Ten evenly spaced drones per lane
+        for (
+          let droneIndex = 0;
+          droneIndex < DRONES_PER_LANE;
+          droneIndex++
+        ) {
+          const phase =
+            (droneIndex / DRONES_PER_LANE) *
+            Math.PI *
+            2
 
-        if (selected) {
-          ring.position = selected.point.position
-          ring.show = true
-        } else {
-          ring.show = false
+          const point = dronePoints.add({
+            id: `SIM-${cityIndex}-${laneIndex}-${droneIndex}`,
+            position: Cesium.Cartesian3.fromDegrees(
+              city.lon,
+              city.lat,
+              1500,
+            ),
+            color: ORANGE,
+            pixelSize: 8,
+            outlineColor: Cesium.Color.fromCssColorString(
+              '#17212b',
+            ),
+            outlineWidth: 1.5,
+          })
+
+          simulation.push({
+            point,
+            centerLat: city.lat,
+            centerLon: city.lon,
+            radius,
+            latitudeCorrection,
+            altitude: 1500,
+            phase,
+
+            // Same speed and direction for all drones
+            // in the same orbital system.
+            speed: ORBIT_SPEED,
+            direction: ORBIT_DIRECTION,
+          })
         }
       })
+    })
 
-    // Handle drone marker clicks
-    const handler = new Cesium.ScreenSpaceEventHandler(
-      viewer.scene.canvas,
-    )
+    simulationRef.current = simulation
 
-    handler.setInputAction((click) => {
-      const picked = viewer.scene.pick(click.position)
+    // Animate all drones continuously
+    const removeAnimation =
+      viewer.scene.preRender.addEventListener(() => {
+        const now = performance.now()
 
-      if (picked && typeof picked.id === 'string') {
-        onSelectRef.current(picked.id)
-      }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+        simulationRef.current.forEach((drone) => {
+          const angle =
+            now * drone.speed * drone.direction +
+            drone.phase
 
-    viewerRef.current = viewer
+          const lat =
+            drone.centerLat +
+            drone.radius * Math.sin(angle)
 
+          const lon =
+            drone.centerLon +
+            (drone.radius /
+              drone.latitudeCorrection) *
+              Math.cos(angle)
+
+          drone.point.position =
+            Cesium.Cartesian3.fromDegrees(
+              lon,
+              lat,
+              drone.altitude,
+            )
+        })
+      })
+
+    // Initial camera position
     viewer.camera.flyTo({
       destination: HOME,
       duration: 2.5,
     })
 
     return () => {
-      removePreRender()
-      handler.destroy()
+      removeAnimation()
       viewer.destroy()
-      pointEntries.clear()
-      pointsCollectionRef.current = null
+
+      simulationRef.current = []
       viewerRef.current = null
     }
   }, [])
 
-  // 2. Keep markers synchronized with the backend fleet roster and telemetry.
-  useEffect(() => {
-    const points = pointsCollectionRef.current
-    if (!points) return
-
-    const droneIds = new Set(drones.map((drone) => drone.id))
-    drones.forEach((drone) => {
-      const entry = pointsRef.current.get(drone.id)
-      const target = Cesium.Cartesian3.fromDegrees(
-        drone.lon,
-        drone.lat,
-        drone.alt,
-      )
-
-      if (entry) {
-        entry.from = Cesium.Cartesian3.clone(entry.point.position)
-        entry.to = target
-        entry.point.color = Cesium.Color.fromCssColorString(
-          STATUS_COLORS[drone.status] ?? '#19d3c5',
-        )
-        return
-      }
-
-      const point = points.add({
-        id: drone.id,
-        position: target,
-        color: Cesium.Color.fromCssColorString(
-          STATUS_COLORS[drone.status] ?? '#19d3c5',
-        ),
-        pixelSize: 11,
-        outlineColor: Cesium.Color.fromCssColorString('#040c16'),
-        outlineWidth: 1.5,
-      })
-      pointsRef.current.set(drone.id, {
-        point,
-        from: Cesium.Cartesian3.clone(target),
-        to: Cesium.Cartesian3.clone(target),
-      })
-    })
-
-    pointsRef.current.forEach((entry, id) => {
-      if (!droneIds.has(id)) {
-        points.remove(entry.point)
-        pointsRef.current.delete(id)
-      }
-    })
-
-    lastTickRef.current = performance.now()
-  }, [drones])
-
-  useEffect(() => {
-    const drone = drones.find((item) => item.id === selectedId)
-    const camera = viewerRef.current?.camera
-    if (!drone || !camera || lastFocusedIdRef.current === selectedId) return
-
-    lastFocusedIdRef.current = selectedId
-    camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(
-        drone.lon,
-        drone.lat,
-        Math.max(drone.alt + 120_000, 180_000),
-      ),
-      duration: 1.5,
-    })
-  }, [selectedId, drones])
-
-  // 3. Zoom controls
+  // Zoom controls
   const zoom = (direction) => {
     const camera = viewerRef.current?.camera
 
@@ -258,6 +263,7 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
     }
   }
 
+  // Center on India
   const centerOnIndia = () => {
     viewerRef.current?.camera.flyTo({
       destination: HOME,
@@ -275,9 +281,13 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
     >
       <div
         ref={containerRef}
-        style={{ width: '100%', height: '100%' }}
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
       />
 
+      {/* Zoom controls */}
       <div className="map-controls">
         <div className="ctrl-group">
           <button
@@ -305,20 +315,19 @@ export default function GlobeView({ drones, selectedId, onSelect }) {
         </div>
       </div>
 
+      {/* Legend */}
       <div className="legend">
         <span>
           <i className="dot active" />
-          Active
+          Simulated drones
         </span>
 
         <span>
-          <i className="dot idle" />
-          Idle
-        </span>
-
-        <span>
-          <i className="dot offline" />
-          Offline
+          <i
+            className="dot"
+            style={{ background: '#ffd166' }}
+          />
+          City center
         </span>
       </div>
     </div>
