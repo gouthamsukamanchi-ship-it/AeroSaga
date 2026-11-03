@@ -1,4 +1,4 @@
-package com.AeroSaga.service;
+package com.aerosaga.service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import com.AeroSaga.entity.Drone;
-import com.AeroSaga.repository.DroneRepository;
+import com.aerosaga.entity.Drone;
+import com.aerosaga.repository.DroneRepository;
 
 @Component
 public class DroneFleetSeeder implements CommandLineRunner {

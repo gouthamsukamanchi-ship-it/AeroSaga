@@ -1,13 +1,13 @@
-package com.AeroSaga;
+package com.aerosaga;
 
 import org.springframework.stereotype.Component;
 
-import com.AeroSaga.dto.TelemetryRequest;
-import com.AeroSaga.entity.Drone;
-import com.AeroSaga.entity.Mission;
-import com.AeroSaga.service.DroneCityCoordinates;
-import com.AeroSaga.service.MissionService;
-import com.AeroSaga.service.TelemetryService;
+import com.aerosaga.dto.TelemetryRequest;
+import com.aerosaga.entity.Drone;
+import com.aerosaga.entity.Mission;
+import com.aerosaga.service.DroneCityCoordinates;
+import com.aerosaga.service.MissionService;
+import com.aerosaga.service.TelemetryService;
 
 @Component
 public class DroneMissionActivitiesImpl implements DroneMissionActivities {

@@ -1,13 +1,13 @@
-package com.AeroSaga.service;
+package com.aerosaga.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.AeroSaga.entity.Mission;
-import com.AeroSaga.entity.SafetyEvent;
-import com.AeroSaga.repository.MissionRepository;
-import com.AeroSaga.repository.SafetyEventRepository;
+import com.aerosaga.entity.Mission;
+import com.aerosaga.entity.SafetyEvent;
+import com.aerosaga.repository.MissionRepository;
+import com.aerosaga.repository.SafetyEventRepository;
 
 @Service
 public class SafetyRuleEngine {

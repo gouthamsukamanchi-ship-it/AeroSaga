@@ -95,7 +95,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-maven-plugin</artifactId>
             <configuration>
-                <mainClass>com.AeroSaga.AerosagaBackendApplication</mainClass>
+                <mainClass>com.aerosaga.AerosagaBackendApplication</mainClass>
             </configuration>
         </plugin>
     </plugins>

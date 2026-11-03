@@ -1,4 +1,4 @@
-package com.AeroSaga;
+package com.aerosaga;
 
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;

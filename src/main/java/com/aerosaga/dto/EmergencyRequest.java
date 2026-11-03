@@ -1,4 +1,4 @@
-package com.AeroSaga.dto;
+package com.aerosaga.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

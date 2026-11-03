@@ -1,12 +1,12 @@
-package com.AeroSaga.service;
+package com.aerosaga.service;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.AeroSaga.entity.WorkflowSignal;
-import com.AeroSaga.repository.WorkflowSignalRepository;
+import com.aerosaga.entity.WorkflowSignal;
+import com.aerosaga.repository.WorkflowSignalRepository;
 
 @Service
 public class WorkflowSignalService {

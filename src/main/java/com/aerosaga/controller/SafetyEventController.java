@@ -1,11 +1,11 @@
-package com.AeroSaga.controller;
+package com.aerosaga.controller;
 
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.AeroSaga.entity.SafetyEvent;
-import com.AeroSaga.repository.SafetyEventRepository;
+import com.aerosaga.entity.SafetyEvent;
+import com.aerosaga.repository.SafetyEventRepository;
 
 @RestController
 @RequestMapping("/api/sentinel/events")

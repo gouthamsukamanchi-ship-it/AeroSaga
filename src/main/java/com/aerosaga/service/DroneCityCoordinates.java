@@ -1,4 +1,4 @@
-package com.AeroSaga.service;
+package com.aerosaga.service;
 
 import java.util.Locale;
 import java.util.Map;

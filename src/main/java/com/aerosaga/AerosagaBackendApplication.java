@@ -1,4 +1,4 @@
-package com.AeroSaga;
+package com.aerosaga;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
