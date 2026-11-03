@@ -49,8 +49,12 @@ class MissionWorkflowIntegrationTest {
                 .andExpect(jsonPath("$.source").value("DEVICE"));
 
         mockMvc.perform(get("/api/telemetry"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/telemetry/drone/{droneId}", droneId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].droneId").value(droneId));
+                .andExpect(jsonPath("$[0].droneId").value(droneId))
+                .andExpect(jsonPath("$[0].source").value("DEVICE"));
 
         String missionResponse = mockMvc.perform(post("/api/missions")
                         .contentType(MediaType.APPLICATION_JSON)
