@@ -36,6 +36,13 @@ public class SafetyRuleEngine {
 
         if (batteryLevel == null) return;
 
+        if (!Double.isFinite(batteryLevel)
+                || batteryLevel < 0.0
+                || batteryLevel > 100.0) {
+            throw new IllegalArgumentException(
+                    "Battery level must be between 0 and 100");
+        }
+
         if (batteryLevel <= CRITICAL_BATTERY) {
 
             log.error("CRITICAL: Drone {} battery at {}%",
